@@ -1,0 +1,5 @@
+D:\стаж\FirstAssignmentWeb\Data_Access\bin\Debug\Data_Access.dll
+D:\стаж\FirstAssignmentWeb\Data_Access\bin\Debug\Data_Access.pdb
+D:\стаж\FirstAssignmentWeb\Data_Access\obj\Debug\Data_Access.csprojResolveAssemblyReference.cache
+D:\стаж\FirstAssignmentWeb\Data_Access\obj\Debug\Data_Access.dll
+D:\стаж\FirstAssignmentWeb\Data_Access\obj\Debug\Data_Access.pdb

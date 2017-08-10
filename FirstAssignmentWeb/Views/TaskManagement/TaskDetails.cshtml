@@ -1,0 +1,108 @@
+﻿@using Data_Access.Entities;
+@using Data_Access.Repositories;
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Task Management</title>
+</head>
+<body>
+    <div>
+        <table>
+            <tr>
+                <td>
+                    <h1 style="font-size:26px;">Task Details</h1>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <ul style="list-style:none;">
+                        <li style="float:left; width:200px;  color:black;"><a href="/UserManagement/Index">UsersManagement</a></li>
+                        <li style="float:left; width:200px; text-decoration:none; color:black;"><a href="/TaskManagement/Index">Tasksmanagement</a></li>
+                        @if (FirstAssignmentWeb.Models.AuthenticationManager.LoggedUser == null)
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Login">Login </a></li>
+                        }
+                        else
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Logout">Logout</a></li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <a href="/TaskManagement/EditTask">Create new</a> <br />
+                    <a href="/TaskManagement/Index">Back</a> <br />
+                    @{
+                        Task task = (Task)ViewData["task"];
+                        UserRepository Repo = RepositoryFactory.GetUserRepository();
+                        User Creator = Repo.GetById(task.CreatorId);
+                        User Assigned = Repo.GetById(task.AssigneeId);
+                        var editLink = "/TaskManagement/EditTask?id=" + task.Id;
+                        var commentLink = "/CommentManagement/Index/?ParentTaskId=" + task.Id;
+                        var logLink = "/TimeLogManagement/Index/?ParentTaskId=" + task.Id;
+                        var StatusLink = "/TaskManagement/EditStatus/?id=" + task.Id;
+                    }
+
+                    <table>
+                        <tr>
+                            <td>Title:</td>
+                            <td>@task.Title</td>
+                            </tr>
+                        <tr>
+                            <td>Description:</td>
+                            <td>@task.Description</td>
+                        </tr>
+                        <tr>
+                            <td>Creator:</td>
+                            <td>@Creator.Username</td>
+                        </tr>
+                        <tr>
+                            <td>Assigned:</td>
+                            @if (Assigned == null)
+                            {
+                            <td><a href="@editLink">Change Assigned</a> <br /></td>
+                            }
+                            else
+                            {
+                                <td>@Assigned.Username</td>
+                            }
+                        </tr>
+                        <tr>
+                            <td>Grade:</td>
+                            <td>@task.Grade</td>
+                        </tr>
+                        <tr>
+                            <td>Creation Date:</td>
+                            <td>@task.CreationDate</td>
+                        </tr>
+                        <tr>
+                            <td>Last Change:</td>
+                            <td>@task.RecentDate</td>
+                        </tr>
+                        <tr>
+                            <td>Status:</td>
+                            <td>@task.Status</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <ul style="list-style:none;">
+                                    <li color:black;"><a href=@commentLink>Comment Management</a></li>
+                                    <li color:black;"><a href=@logLink>Timelog Management</a></li>
+                                    <li color:black;"><a href=@StatusLink>Status Change</a></li>
+                                </ul>
+                            </td>
+                        </tr>
+                     </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

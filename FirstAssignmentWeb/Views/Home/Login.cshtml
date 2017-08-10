@@ -1,0 +1,63 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Log in</title>
+</head>
+<body>
+    <div> 
+        <table>
+            <tr>
+                <td>
+                    <h1 style="font-size:26px;">Task Managemen</h1>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <ul style="list-style:none;">
+                        <li style="float:left; width:200px;  color:black;"><a href="/UserManagement/Index">UsersManagement</a></li>
+                        <li style="float:left; width:200px; text-decoration:none; color:black;"><a href="/TaskManagement/Index">Tasksmanagement</a></li>
+                        @if (FirstAssignmentWeb.Models.AuthenticationManager.LoggedUser == null)
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Login">Login </a></li>
+                        }
+                        else
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Logout">Logout</a></li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <form action="/Home/Login" method="post">
+                        <fieldset>
+                            <legend>Login</legend>
+                            @Html.ValidationMessage("authenticationFailed")
+                            <table>
+                                <tr>
+                                    <td>Username:</td>
+                                    <td><input type="text" name="username" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Password:</td>
+                                    <td><input type="password" name="password" /></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><input type="submit" value="Login" /></td>
+                                </tr>
+                            </table>
+                        </fieldset>
+                    </form>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,70 @@
+﻿@using Data_Access.Entities;
+@using Data_Access.Repositories;
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Status Change</title>
+</head>
+<body>
+    <div>
+        <table>
+            <tr>
+                <td>
+                    <h1 style="font-size:26px;">Status Change</h1>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <ul style="list-style:none;">
+                        <li style="float:left; width:200px;  color:black;"><a href="/UserManagement/Index">UsersManagement</a></li>
+                        <li style="float:left; width:200px; text-decoration:none; color:black;"><a href="/TaskManagement/Index">Tasksmanagement</a></li>
+                        @if (FirstAssignmentWeb.Models.AuthenticationManager.LoggedUser == null)
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Login">Login </a></li>
+                        }
+                        else
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Logout">Logout</a></li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>
+
+                    @{
+                        Task task = (Task)ViewData["task"];
+                    }
+                    <form action="/TaskManagement/EditStatus" method="post">
+                        <input type="hidden" name="Id" value="@task.Id" />
+                        <input type="hidden" name="Title" value="@task.Title" />
+                        <input type="hidden" name="Description" value="@task.Description" />
+                        <input type="hidden" name="CreatorId" value="@task.CreatorId" />
+                        <input type="hidden" name="AssigneeId" value="@task.AssigneeId" />
+                        <input type="hidden" name="Grade" value="@task.Grade" />
+                        <input type="hidden" name="CreationDate" value="@task.CreationDate" />
+                        <fieldset>
+                            <legend>Edit Status</legend>
+                            <table>
+                                <tr>
+                                    <td>Status:</td>
+                                    <td><input type="text" name="Status" value="@task.Status" /></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><input type="submit" value="Save" />&nbsp;<a href="/TaskManagement/TaskDetails?id=@task.Id">Cancel</a></td>
+                                </tr>
+                            </table>
+                        </fieldset>
+                    </form>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

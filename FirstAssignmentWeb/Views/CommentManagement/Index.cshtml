@@ -1,0 +1,82 @@
+﻿@using Data_Access.Entities;
+@using Data_Access.Repositories;
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Comment Management</title>
+</head>
+<body>
+    <div>
+        <table>
+            <tr>
+                <td>
+                    <h1 style="font-size:26px;">Manage Comments</h1>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <ul style="list-style:none;">
+                        <li style="float:left; width:200px;  color:black;"><a href="/UserManagement/Index">UsersManagement</a></li>
+                        <li style="float:left; width:200px; text-decoration:none; color:black;"><a href="/TaskManagement/Index">Tasksmanagement</a></li>
+                        @if (FirstAssignmentWeb.Models.AuthenticationManager.LoggedUser == null)
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Login">Login </a></li>
+                        }
+                        else
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Logout">Logout</a></li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    @{
+                        Task task = (Task)ViewData["task"];
+                        UserRepository Repo = RepositoryFactory.GetUserRepository();
+                        User Creator = Repo.GetById(task.CreatorId);
+                        User Assigned = Repo.GetById(task.AssigneeId);
+                    }
+                    <a href="/TaskManagement/TaskDetails/?id=@task.Id">Back</a> <br />
+                    Title: @task.Title <br />
+                    Description: @task.Description <br />
+                    Creator: @Creator.Username <br />
+                    Assigned: @Assigned.Username <br />
+                    Grade: @task.Grade <br />
+                    Creation Date: @task.CreationDate <br />
+                    Last Change: @task.RecentDate <br />
+                    Status: @task.Status <br />
+                    <a href="/CommentManagement/EditComment/?ParentTaskId=@task.Id">Create new comment</a> <br />
+                    <table>
+                        <tr>
+                            <th>Creator</th>
+                            <th>Comment</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                        @foreach (Comment comment in (List<Comment>)ViewData["comments"])
+                        {
+                            User creator = Repo.GetById(comment.ParentUserId);
+                            var editLink = "/CommentManagement/EditComment?id=" + comment.Id;
+                            var deleteLink = "/CommentManagement/Delete?id=" + comment.Id;
+
+                            <tr>
+                                <td>@creator.Username</td>
+                                <td>@comment.CommentBody</td>
+                                <td><a href="@editLink">edit</a></td>
+                                <td><a href="@deleteLink">delete</a></td>
+                            </tr>
+                        }
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

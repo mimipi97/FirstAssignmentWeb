@@ -1,0 +1,97 @@
+﻿@using Data_Access.Entities;
+@using Data_Access.Repositories;
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Task Management</title>
+</head>
+<body>
+    <div>
+        <table>
+            <tr>
+                <td>
+                    <h1 style="font-size:26px;">Edit Task</h1>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <ul style="list-style:none;">
+                        <li style="float:left; width:200px;  color:black;"><a href="/UserManagement/Index">UsersManagement</a></li>
+                        <li style="float:left; width:200px; text-decoration:none; color:black;"><a href="/TaskManagement/Index">Tasksmanagement</a></li>
+                        @if (FirstAssignmentWeb.Models.AuthenticationManager.LoggedUser == null)
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Login">Login </a></li>
+                        }
+                        else
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Logout">Logout</a></li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+            <tr>
+                <td>
+                    @{
+                        Task task = (Task)ViewData["task"];
+                    }
+                    <form action="/TaskManagement/EditTask" method="post">
+                        <input type="hidden" name="Id" value="@task.Id" />
+                        <input type="hidden" name="CreatorId" value="@task.CreatorId" />
+                        <input type="hidden" name="CreationDate" value="@task.CreationDate" />
+                        <fieldset>
+                            <legend>Edit Task</legend>
+                            <table>
+                                <tr>
+                                    <td>Title:</td>
+                                    <td><input type="text" name="Title" value="@task.Title" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Description:</td>
+                                    <td><input type="text" name="Description" value="@task.Description" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Assigned:</td>
+                                    <td><select name="AssigneeId">
+                                       @{ 
+                                           List<User> users = (List<User>)ViewData["users"];
+                                           UserRepository Repo = RepositoryFactory.GetUserRepository();
+                                           User Assigned = Repo.GetById(task.AssigneeId);
+                                       }
+                                       @if (Assigned == null)
+                                       {
+                                           <option selected></option>
+                                       }
+                                       @for (int i = 1; i <= users.Count; i++)
+                                       {
+                                        <option value="@i"> @users[i-1].Username</option>  
+                                       }
+                                    </select></td>
+                                </tr>
+                                <tr>
+                                    <td>Grade:</td>
+                                    <td><input type="text" name="Grade" value="@task.Grade" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Status:</td>
+                                    <td><input type="text" name="Status" value="@task.Status" /></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><input type="submit" value="Save" />&nbsp;<a href="/TaskManagement/Index">Cancel</a></td>
+                                </tr>
+                            </table>
+                        </fieldset>
+                    </form>
+                </td>
+            </tr>
+
+        </table>
+    </div>
+</body>
+</html>

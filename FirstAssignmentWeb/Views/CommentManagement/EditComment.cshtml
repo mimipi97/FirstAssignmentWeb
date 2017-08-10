@@ -1,0 +1,66 @@
+﻿@using Data_Access.Entities;
+@using Data_Access.Repositories;
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Comment Management</title>
+</head>
+<body>
+    <div>
+        <table>
+            <tr>
+                <td>
+                    <h1 style="font-size:26px;">Edit Comment</h1>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <ul style="list-style:none;">
+                        <li style="float:left; width:200px;  color:black;"><a href="/UserManagement/Index">UsersManagement</a></li>
+                        <li style="float:left; width:200px; text-decoration:none; color:black;"><a href="/TaskManagement/Index">Tasksmanagement</a></li>
+                        @if (FirstAssignmentWeb.Models.AuthenticationManager.LoggedUser == null)
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Login">Login </a></li>
+                        }
+                        else
+                        {
+                            <li style="float:left; width:200px;  color:black;"><a href="/Home/Logout">Logout</a></li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    @{
+                        Comment comment = (Comment)ViewData["comment"];
+                    }
+                    <form action="/CommentManagement/EditComment" method="post">
+                        <input type="hidden" name="Id" value="@comment.Id" />
+                        <input type="hidden" name="ParentTaskId" value="@comment.ParentTaskId" />
+                        <input type="hidden" name="ParentUserId" value="@comment.ParentUserId" />
+                        <fieldset>
+                            <legend>Edit Comment</legend>
+                            <table>
+                                <tr>
+                                    <td>Text:</td>
+                                    <td><textarea name="CommentBody" style="width:200px; height:300px;">@comment.CommentBody</textarea></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><input type="submit" value="Save" />&nbsp;<a href="/TaskManagement/TaskDetails?id=@comment.ParentTaskId">Cancel</a></td>
+                                </tr>
+                            </table>
+                        </fieldset>
+                    </form>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
+
