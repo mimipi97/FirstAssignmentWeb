@@ -1,153 +1,160 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
 using Data_Access.Entities;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Data_Access.Repositories
 {
     public class UserRepository
     {
-        private readonly string filePath;
+        private readonly string connectionString;
 
-        internal UserRepository(string filePath)
+        public UserRepository(string connectionString)
         {
-            this.filePath = filePath;
-        }
-
-        private int GetNextId()
-        {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
-            int id = 1;
-            try
-            {
-                while (!sr.EndOfStream)
-                {
-                    User user = new User();
-                    user.Id = Convert.ToInt32(sr.ReadLine());
-                    user.FirstName = sr.ReadLine();
-                    user.LastName = sr.ReadLine();
-                    user.Username = sr.ReadLine();
-                    user.Password = sr.ReadLine();
-
-                    if (id <= user.Id)
-                    {
-                        id = user.Id + 1;
-                    }
-                }
-            }
-            finally
-            {
-                sr.Close();
-                fs.Close();
-            }
-
-            return id;
+            this.connectionString = connectionString;
         }
 
         private void Insert(User item)
         {
-            item.Id = GetNextId();
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            FileStream fs = new FileStream(filePath, FileMode.Append);
-            StreamWriter sw = new StreamWriter(fs);
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+INSERT INTO Users (FirstName, LastName, Username, [Password] ) 
+VALUES (@FirstName, @LastName, @Username, @Password)
+";
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@FirstName";
+            parameter.Value = item.FirstName;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@LastName";
+            parameter.Value = item.LastName;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Username";
+            parameter.Value = item.Username;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Password";
+            parameter.Value = item.Password;
+            command.Parameters.Add(parameter);
 
             try
             {
-                sw.WriteLine(item.Id);
-                sw.WriteLine(item.FirstName);
-                sw.WriteLine(item.LastName);
-                sw.WriteLine(item.Username);
-                sw.WriteLine(item.Password);
+                connection.Open();
+
+                command.ExecuteNonQuery();
             }
             finally
             {
-                sw.Close();
-                fs.Close();
+                connection.Close();
             }
         }
 
         private void Update(User item)
         {
-            string fileName = filePath.Substring(filePath.LastIndexOf(@"\") + 1);
-            string fileFolder = filePath.Substring(0, filePath.LastIndexOf(@"\"));
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            string tempFilePath = fileFolder + "temp." + fileName;
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+UPDATE Users 
+SET 
+    FirstName=@FirstName, 
+    LastName=@LastName, 
+    Username=@Username,
+    [Password]=@Password
+WHERE Id=@Id
+";
 
-            FileStream ifs = new FileStream(filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(ifs);
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Id";
+            parameter.Value = item.Id;
+            command.Parameters.Add(parameter);
 
-            FileStream ofs = new FileStream(tempFilePath, FileMode.OpenOrCreate);
-            StreamWriter sw = new StreamWriter(ofs);
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@FirstName";
+            parameter.Value = item.FirstName;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@LastName";
+            parameter.Value = item.LastName;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Username";
+            parameter.Value = item.Username;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Password";
+            parameter.Value = item.Password;
+            command.Parameters.Add(parameter);
 
             try
             {
-                while (!sr.EndOfStream)
-                {
-                    User user = new User();
-                    user.Id = Convert.ToInt32(sr.ReadLine());
-                    user.FirstName = sr.ReadLine();
-                    user.LastName = sr.ReadLine();
-                    user.Username = sr.ReadLine();
-                    user.Password = sr.ReadLine();
+                connection.Open();
 
-                    if (user.Id != item.Id)
-                    {
-                        sw.WriteLine(user.Id);
-                        sw.WriteLine(user.FirstName);
-                        sw.WriteLine(user.LastName);
-                        sw.WriteLine(user.Username);
-                        sw.WriteLine(user.Password);
-                    }
-                    else
-                    {
-                        sw.WriteLine(item.Id);
-                        sw.WriteLine(item.FirstName);
-                        sw.WriteLine(item.LastName);
-                        sw.WriteLine(item.Username);
-                        sw.WriteLine(item.Password);
-                    }
-                }
+                command.ExecuteNonQuery();
             }
             finally
             {
-                sw.Close();
-                ofs.Close();
-                sr.Close();
-                ifs.Close();
+                connection.Close();
             }
-
-            File.Delete(filePath);
-            File.Move(tempFilePath, filePath);
         }
 
         public User GetById(int id)
         {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
+            IDbConnection connection = new SqlConnection(connectionString);
             try
             {
-                while (!sr.EndOfStream)
+                connection.Open();
+                using (connection)
                 {
-                    User user = new User();
-                    user.Id = Convert.ToInt32(sr.ReadLine());
-                    user.FirstName = sr.ReadLine();
-                    user.LastName = sr.ReadLine();
-                    user.Username = sr.ReadLine();
-                    user.Password = sr.ReadLine();
+                    IDbCommand command = connection.CreateCommand();
+                    command.CommandText =
+@"
+SELECT * FROM Users 
+WHERE 
+Id=@Id 
+";
 
-                    if (user.Id == id)
+                    IDataParameter parameter = command.CreateParameter();
+                    parameter.ParameterName = "@Id";
+                    parameter.Value = id;
+                    command.Parameters.Add(parameter);
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    using (reader)
                     {
-                        return user;
+                        while (reader.Read())
+                        {
+                            User user = new User();
+                            user.Id = (int)reader["Id"];
+                            user.FirstName = (string)reader["FirstName"];
+                            user.LastName = (string)reader["LastName"];
+                            user.Username = (string)reader["Username"];
+                            user.Password = (string)reader["Password"];
+
+                            return user;
+                        }
                     }
                 }
             }
             finally
             {
-                sr.Close();
-                fs.Close();
+                connection.Close();
             }
 
             return null;
@@ -155,78 +162,69 @@ namespace Data_Access.Repositories
 
         public List<User> GetAll()
         {
-            List<User> result = new List<User>();
-
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
+            List<User> resultSet = new List<User>();
+            IDbConnection connection = new SqlConnection(connectionString);
 
             try
             {
-                while (!sr.EndOfStream)
+                connection.Open();
+                IDbCommand command = connection.CreateCommand();
+                command.CommandText =
+@"
+SELECT * FROM Users 
+";
+
+                IDataReader reader = command.ExecuteReader();
+                using (reader)
                 {
-                    User user = new User();
-                    user.Id = Convert.ToInt32(sr.ReadLine());
-                    user.FirstName = sr.ReadLine();
-                    user.LastName = sr.ReadLine();
-                    user.Username = sr.ReadLine();
-                    user.Password = sr.ReadLine();
-
-                    result.Add(user);
-                }
-            }
-            finally
-            {
-                sr.Close();
-                fs.Close();
-            }
-
-            return result;
-        }
-
-        public void Delete(User item)
-        {
-            string fileName = filePath.Substring(filePath.LastIndexOf(@"\") + 1);
-            string fileFolder = filePath.Substring(0, filePath.LastIndexOf(@"\"));
-
-            string tempFilePath = fileFolder + "temp." + fileName;
-
-            FileStream ifs = new FileStream(filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(ifs);
-
-            FileStream ofs = new FileStream(tempFilePath, FileMode.OpenOrCreate);
-            StreamWriter sw = new StreamWriter(ofs);
-
-            try
-            {
-                while (!sr.EndOfStream)
-                {
-                    User user = new User();
-                    user.Id = Convert.ToInt32(sr.ReadLine());
-                    user.FirstName = sr.ReadLine();
-                    user.LastName = sr.ReadLine();
-                    user.Username = sr.ReadLine();
-                    user.Password = sr.ReadLine();
-
-                    if (user.Id != item.Id)
+                    while (reader.Read())
                     {
-                        sw.WriteLine(user.Id);
-                        sw.WriteLine(user.FirstName);
-                        sw.WriteLine(user.LastName);
-                        sw.WriteLine(user.Username);
-                        sw.WriteLine(user.Password);
+                        resultSet.Add(new User()
+                        {
+                            Id = (int)reader["Id"],
+                            FirstName = (string)reader["FirstName"],
+                            LastName = (string)reader["LastName"],
+                            Username = (string)reader["Username"],
+                            Password = (string)reader["Password"]
+                        });
                     }
                 }
             }
             finally
             {
-                sw.Close();
-                ofs.Close();
-                sr.Close();
-                ifs.Close();
+                connection.Close();
             }
 
-            File.Delete(filePath);
-            File.Move(tempFilePath, filePath);
+            return resultSet;
+        }
+
+        public void Delete(User item)
+        {
+            IDbConnection connection = new SqlConnection(connectionString);
+
+
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+DELETE FROM Users 
+WHERE Id=@Id
+";
+
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Id";
+            parameter.Value = item.Id;
+            command.Parameters.Add(parameter);
+
+            try
+            {
+                connection.Open();
+
+                command.ExecuteNonQuery();
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
 
         public void Save(User item)
@@ -243,30 +241,52 @@ namespace Data_Access.Repositories
 
         public User GetByUsernameAndPassword(string username, string password)
         {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
+            IDbConnection connection = new SqlConnection(connectionString);
             try
             {
-                while (!sr.EndOfStream)
+                connection.Open();
+                using (connection)
                 {
-                    User user = new User();
-                    user.Id = Convert.ToInt32(sr.ReadLine());
-                    user.FirstName = sr.ReadLine();
-                    user.LastName = sr.ReadLine();
-                    user.Username = sr.ReadLine();
-                    user.Password = sr.ReadLine();
+                    IDbCommand command = connection.CreateCommand();
+                    command.CommandText =
+@"
+SELECT * FROM [Users] 
+WHERE 
+    [Username]=@Username 
+    AND [Password]=@Password
+";
 
-                    if (user.Username == username && user.Password == password)
+                    IDataParameter parameter = command.CreateParameter();
+                    parameter.ParameterName = "@Username";
+                    parameter.Value = username;
+                    command.Parameters.Add(parameter);
+
+                    parameter = command.CreateParameter();
+                    parameter.ParameterName = "@Password";
+                    parameter.Value = password;
+                    command.Parameters.Add(parameter);
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    using (reader)
                     {
-                        return user;
+                        while (reader.Read())
+                        {
+                            User user = new User();
+                            user.Id = (int)reader["Id"];
+                            user.FirstName = (string)reader["FirstName"];
+                            user.LastName = (string)reader["LastName"];
+                            user.Username = (string)reader["Username"];
+                            user.Password = (string)reader["Password"];
+
+                            return user;
+                        }
                     }
                 }
             }
             finally
             {
-                sr.Close();
-                fs.Close();
+                connection.Close();
             }
 
             return null;

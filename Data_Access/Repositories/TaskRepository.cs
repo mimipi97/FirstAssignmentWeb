@@ -1,179 +1,207 @@
 ﻿using System;
 using System.Collections.Generic;
+using Data_Access.Entities;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
-using Data_Access.Entities;
-using System.IO;
 
 namespace Data_Access.Repositories
 {
     public class TaskRepository
     {
-        private readonly string filePath;
+        private readonly string connectionString;
 
-        public TaskRepository(string filePath)
+        public TaskRepository(string connectionString)
         {
-            this.filePath = filePath;
-        }
-
-        private int GetNextId()
-        {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
-            int id = 1;
-            try
-            {
-                while (!sr.EndOfStream)
-                {
-                    Task task = new Task();
-                    task.Id = Convert.ToInt32(sr.ReadLine());
-                    task.Title = sr.ReadLine();
-                    task.Description = sr.ReadLine();
-                    task.CreatorId = Convert.ToInt32(sr.ReadLine());
-                    task.AssigneeId = Convert.ToInt32(sr.ReadLine());
-                    task.Grade = Convert.ToInt32(sr.ReadLine());
-                    task.CreationDate = Convert.ToDateTime(sr.ReadLine());
-                    task.RecentDate = Convert.ToDateTime(sr.ReadLine());
-                    task.Status = sr.ReadLine();
-
-                    if (id <= task.Id)
-                    {
-                        id = task.Id + 1;
-                    }
-                }
-            }
-            finally
-            {
-                sr.Close();
-                fs.Close();
-            }
-
-            return id;
+            this.connectionString = connectionString;
         }
 
         private void Insert(Task item)
         {
-            item.Id = GetNextId();
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            FileStream fs = new FileStream(filePath, FileMode.Append);
-            StreamWriter sw = new StreamWriter(fs);
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+INSERT INTO Tasks (Title, [Description], CreatorId, AssigneeId, Grade, CreationDate, RecentDate,Status) 
+VALUES (@Title, @Description, @CreatorId, @AssigneeId, @Grade, @CreationDate, @RecentDate, @Status) 
+";
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Title";
+            parameter.Value = item.Title;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Description";
+            parameter.Value = item.Description;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@CreatorId";
+            parameter.Value = item.CreatorId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@AssigneeId";
+            parameter.Value = item.AssigneeId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Grade";
+            parameter.Value = item.Grade;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@CreationDate";
+            parameter.Value = item.CreationDate;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@RecentDate";
+            parameter.Value = item.RecentDate;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Status";
+            parameter.Value = item.Status;
+            command.Parameters.Add(parameter);
 
             try
             {
-                sw.WriteLine(item.Id);
-                sw.WriteLine(item.Title);
-                sw.WriteLine(item.Description);
-                sw.WriteLine(item.CreatorId);
-                sw.WriteLine(item.AssigneeId);
-                sw.WriteLine(item.Grade);
-                sw.WriteLine(item.CreationDate);
-                sw.WriteLine(item.RecentDate);
-                sw.WriteLine(item.Status);
+                connection.Open();
+
+                command.ExecuteNonQuery();
             }
             finally
             {
-                sw.Close();
-                fs.Close();
+                connection.Close();
             }
         }
 
         private void Update(Task item)
         {
-            string fileName = filePath.Substring(filePath.LastIndexOf(@"\") + 1);
-            string fileFolder = filePath.Substring(0, filePath.LastIndexOf(@"\"));
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            string tempFilePath = fileFolder + "temp." + fileName;
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+UPDATE Tasks 
+SET 
+    Title=@Title, 
+    [Description]=@Description, 
+    CreatorId=@CreatorId,
+    AssigneeId=@AssigneeId,
+    Grade=@Grade,
+    CreationDate=@CreationDate,
+    RecentDate=@RecentDate,
+    Status=@Status
+WHERE Id=@Id
+";
 
-            FileStream ifs = new FileStream(filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(ifs);
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Id";
+            parameter.Value = item.Id;
+            command.Parameters.Add(parameter);
 
-            FileStream ofs = new FileStream(tempFilePath, FileMode.OpenOrCreate);
-            StreamWriter sw = new StreamWriter(ofs);
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Title";
+            parameter.Value = item.Title;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Description";
+            parameter.Value = item.Description;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@CreatorId";
+            parameter.Value = item.CreatorId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@AssigneeId";
+            parameter.Value = item.AssigneeId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Grade";
+            parameter.Value = item.Grade;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@CreationDate";
+            parameter.Value = item.CreationDate;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@RecentDate";
+            parameter.Value = item.RecentDate;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@Status";
+            parameter.Value = item.Status;
+            command.Parameters.Add(parameter);
 
             try
             {
-                while (!sr.EndOfStream)
-                {
-                    Entities.Task task = new Task();
-                    task.Id = Convert.ToInt32(sr.ReadLine());
-                    task.Title = sr.ReadLine();
-                    task.Description = sr.ReadLine();
-                    task.CreatorId = Convert.ToInt32(sr.ReadLine());
-                    task.AssigneeId = Convert.ToInt32(sr.ReadLine());
-                    task.Grade = Convert.ToInt32(sr.ReadLine());
-                    task.CreationDate = Convert.ToDateTime(sr.ReadLine());
-                    task.RecentDate = Convert.ToDateTime(sr.ReadLine());
-                    task.Status = sr.ReadLine();
+                connection.Open();
 
-                    if (task.Id != item.Id)
-                    {
-                        sw.WriteLine(task.Id);
-                        sw.WriteLine(task.Title);
-                        sw.WriteLine(task.Description);
-                        sw.WriteLine(task.CreatorId);
-                        sw.WriteLine(task.AssigneeId);
-                        sw.WriteLine(task.Grade);
-                        sw.WriteLine(task.CreationDate);
-                        sw.WriteLine(task.RecentDate);
-                        sw.WriteLine(task.Status);
-                    }
-                    else
-                    {
-                        sw.WriteLine(item.Id);
-                        sw.WriteLine(item.Title);
-                        sw.WriteLine(item.Description);
-                        sw.WriteLine(item.CreatorId);
-                        sw.WriteLine(item.AssigneeId);
-                        sw.WriteLine(item.Grade);
-                        sw.WriteLine(item.CreationDate);
-                        sw.WriteLine(item.RecentDate);
-                        sw.WriteLine(item.Status);
-                    }
-                }
+                command.ExecuteNonQuery();
             }
             finally
             {
-                sw.Close();
-                sr.Close();
-                ifs.Close();
-                ofs.Close();
+                connection.Close();
             }
-
-            File.Delete(filePath);
-            File.Move(tempFilePath, filePath);
         }
 
         public Task GetById(int id)
         {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
+            IDbConnection connection = new SqlConnection(connectionString);
             try
             {
-                while (!sr.EndOfStream)
+                connection.Open();
+                using (connection)
                 {
-                    Task task = new Task();
-                    task.Id = Convert.ToInt32(sr.ReadLine());
-                    task.Title = sr.ReadLine();
-                    task.Description = sr.ReadLine();
-                    task.CreatorId = Convert.ToInt32(sr.ReadLine());
-                    task.AssigneeId = Convert.ToInt32(sr.ReadLine());
-                    task.Grade = Convert.ToInt32(sr.ReadLine());
-                    task.CreationDate = Convert.ToDateTime(sr.ReadLine());
-                    task.RecentDate = Convert.ToDateTime(sr.ReadLine());
-                    task.Status = sr.ReadLine();
+                    IDbCommand command = connection.CreateCommand();
+                    command.CommandText =
+@"
+SELECT * FROM Tasks 
+WHERE 
+Id=@Id 
+";
 
-                    if (task.Id == id)
+                    IDataParameter parameter = command.CreateParameter();
+                    parameter.ParameterName = "@Id";
+                    parameter.Value = id;
+                    command.Parameters.Add(parameter);
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    using (reader)
                     {
-                        return task;
+                        while (reader.Read())
+                        {
+                            Task task = new Task();
+                            task.Id = (int)reader["Id"];
+                            task.Title = (string)reader["Title"];
+                            task.Description = (string)reader["Description"];
+                            task.CreatorId = (int)reader["CreatorId"];
+                            task.AssigneeId = (int)reader["AssigneeId"];
+                            task.Grade = (int)reader["Grade"];
+                            task.CreationDate = (DateTime)reader["CreationDate"];
+                            task.RecentDate = (DateTime)reader["RecentDate"];
+                            task.Status = (string)reader["Title"];
+
+                            return task;
+                        }
                     }
                 }
             }
             finally
             {
-                sr.Close();
-                fs.Close();
+                connection.Close();
             }
 
             return null;
@@ -181,101 +209,99 @@ namespace Data_Access.Repositories
 
         public List<Task> GetAllYours(int CreatorId, int AssigneeId)
         {
-            List<Task> result = new List<Task>();
-
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
+            List<Task> resultSet = new List<Task>();
+            IDbConnection connection = new SqlConnection(connectionString);
 
             try
             {
-                while (!sr.EndOfStream)
-                {
-                    Task task = new Task();
-                    task.Id = Convert.ToInt32(sr.ReadLine());
-                    task.Title = sr.ReadLine();
-                    task.Description = sr.ReadLine();
-                    task.CreatorId = Convert.ToInt32(sr.ReadLine());
-                    task.AssigneeId = Convert.ToInt32(sr.ReadLine());
-                    task.Grade = Convert.ToInt32(sr.ReadLine());
-                    task.CreationDate = Convert.ToDateTime(sr.ReadLine());
-                    task.RecentDate = Convert.ToDateTime(sr.ReadLine());
-                    task.Status = sr.ReadLine();
+                connection.Open();
+                IDbCommand command = connection.CreateCommand();
+                command.CommandText =
+@"
+SELECT * FROM Tasks 
+WHERE 
+    [CreatorId]=@CreatorId 
+    AND [AssigneeId]=@AssigneeId
+";
+                IDataParameter parameter = command.CreateParameter();
+                parameter.ParameterName = "@CreatorId";
+                parameter.Value = CreatorId;
+                command.Parameters.Add(parameter);
 
-                    if (task.CreatorId == CreatorId || task.AssigneeId == AssigneeId)
+                parameter = command.CreateParameter();
+                parameter.ParameterName = "@AssigneeId";
+                parameter.Value = AssigneeId;
+                command.Parameters.Add(parameter);
+
+                IDataReader reader = command.ExecuteReader();
+                using (reader)
+                {
+                    while (reader.Read())
                     {
-                        result.Add(task);
+                        resultSet.Add(new Task()
+                        {
+                            Id = (int)reader["Id"],
+                            Title = (string)reader["Title"],
+                            Description = (string)reader["Description"],
+                            CreatorId = (int)reader["CreatorId"],
+                            AssigneeId = (int)reader["AssigneeId"],
+                            Grade = (int)reader["Grade"],
+                            CreationDate = (DateTime)reader["CreationDate"],
+                            RecentDate = (DateTime)reader["RecentDate"],
+                            Status = (string)reader["Status"]
+                        });
                     }
                 }
             }
             finally
             {
-                sr.Close();
-                fs.Close();
+                connection.Close();
             }
 
-            return result;
+            return resultSet;
         }
 
         public void Delete(Task item)
         {
-            string fileName = filePath.Substring(filePath.LastIndexOf(@"\") + 1);
-            string fileFolder = filePath.Substring(0, filePath.LastIndexOf(@"\"));
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            string tempFilePath = fileFolder + "temp." + fileName;
 
-            FileStream ifs = new FileStream(filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(ifs);
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+DELETE FROM Tasks 
+WHERE Id=@Id
+";
 
-            FileStream ofs = new FileStream(tempFilePath, FileMode.OpenOrCreate);
-            StreamWriter sw = new StreamWriter(ofs);
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Id";
+            parameter.Value = item.Id;
+            command.Parameters.Add(parameter);
 
             try
             {
-                while (!sr.EndOfStream)
-                {
-                    Task task = new Task();
-                    task.Id = Convert.ToInt32(sr.ReadLine());
-                    task.Title = sr.ReadLine();
-                    task.Description = sr.ReadLine();
-                    task.CreatorId = Convert.ToInt32(sr.ReadLine());
-                    task.AssigneeId = Convert.ToInt32(sr.ReadLine());
-                    task.Grade = Convert.ToInt32(sr.ReadLine());
-                    task.CreationDate = Convert.ToDateTime(sr.ReadLine());
-                    task.RecentDate = Convert.ToDateTime(sr.ReadLine());
-                    task.Status = sr.ReadLine();
+                connection.Open();
 
-                    if (task.Id != item.Id)
-                    {
-                        sw.WriteLine(task.Id);
-                        sw.WriteLine(task.Title);
-                        sw.WriteLine(task.Description);
-                        sw.WriteLine(task.CreatorId);
-                        sw.WriteLine(task.AssigneeId);
-                        sw.WriteLine(task.Grade);
-                        sw.WriteLine(task.CreationDate);//warning
-                        sw.WriteLine(task.RecentDate);
-                        sw.WriteLine(task.Status);
-                    }
-                }
+                command.ExecuteNonQuery();
             }
             finally
             {
-                sw.Close();
-                sr.Close();
-                ifs.Close();
-                ofs.Close();
+                connection.Close();
             }
-
-            File.Delete(filePath);
-            File.Move(tempFilePath, filePath);
         }
 
         public void Save(Task item)
         {
             if (item.Id > 0)
+            {
                 Update(item);
+            }
             else
+            {
                 Insert(item);
+            }
         }
     }
 }
+
+        

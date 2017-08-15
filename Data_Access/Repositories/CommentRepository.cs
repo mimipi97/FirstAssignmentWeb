@@ -1,148 +1,149 @@
 ﻿using System;
 using System.Collections.Generic;
+using Data_Access.Entities;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Data_Access.Entities;
-using System.IO;
 
 namespace Data_Access.Repositories
 {
     public class CommentRepository
     {
-        private readonly string filePath;
+        private readonly string connectionString;
 
-        public CommentRepository(string filePath)
+        public CommentRepository(string connectionString)
         {
-            this.filePath = filePath;
-        }
-
-        private int GetNextId()
-        {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
-            int id = 1;
-            try
-            {
-                while (!sr.EndOfStream)
-                {
-                    Comment comment = new Comment();
-                    comment.Id = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    comment.CommentBody = sr.ReadLine();
-
-                    if (id <= comment.Id)
-                        id = comment.Id + 1;
-                }
-            }
-            finally
-            {
-                sr.Close();
-                fs.Close();
-            }
-
-            return id;
+            this.connectionString = connectionString;
         }
 
         private void Insert(Comment item)
         {
-            item.Id = GetNextId();
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            FileStream fs = new FileStream(filePath, FileMode.Append);
-            StreamWriter sw = new StreamWriter(fs);
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+INSERT INTO Comments (ParentTaskId,ParentUserId,CommentBody) 
+VALUES (@ParentTaskId,@ParentUserId,@CommentBody) 
+";
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@ParentTaskId";
+            parameter.Value = item.ParentTaskId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@ParentUserId";
+            parameter.Value = item.ParentUserId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@CommentBody";
+            parameter.Value = item.CommentBody;
+            command.Parameters.Add(parameter);
+
 
             try
             {
-                sw.WriteLine(item.Id);
-                sw.WriteLine(item.ParentTaskId);
-                sw.WriteLine(item.ParentUserId);
-                sw.WriteLine(item.CommentBody);
+                connection.Open();
+
+                command.ExecuteNonQuery();
             }
             finally
             {
-                sw.Close();
-                fs.Close();
+                connection.Close();
             }
         }
 
         private void Update(Comment item)
         {
-            string fileName = filePath.Substring(filePath.LastIndexOf(@"\") + 1);
-            string fileFolder = filePath.Substring(0, filePath.LastIndexOf(@"\"));
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            string tempFilePath = fileFolder + "temp." + fileName;
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+UPDATE Comments 
+SET 
+    ParentTaskId=@ParentTaskId, 
+    ParentUserId=@ParentUserId,
+    CommentBody=@CommentBody
+WHERE Id=@Id
+";
 
-            FileStream ifs = new FileStream(filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(ifs);
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Id";
+            parameter.Value = item.Id;
+            command.Parameters.Add(parameter);
 
-            FileStream ofs = new FileStream(tempFilePath, FileMode.OpenOrCreate);
-            StreamWriter sw = new StreamWriter(ofs);
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@ParentTaskId";
+            parameter.Value = item.ParentTaskId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@ParentUserId";
+            parameter.Value = item.ParentUserId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@CommentBody";
+            parameter.Value = item.CommentBody;
+            command.Parameters.Add(parameter);
 
             try
             {
-                while (!sr.EndOfStream)
-                {
-                    Comment comment = new Comment();
-                    comment.Id = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    comment.CommentBody = sr.ReadLine();
+                connection.Open();
 
-                    if (comment.Id != item.Id)
-                    {
-                        sw.WriteLine(comment.Id);
-                        sw.WriteLine(comment.ParentTaskId);
-                        sw.WriteLine(comment.ParentUserId);
-                        sw.WriteLine(comment.CommentBody);
-                    }
-                    else
-                    {
-                        sw.WriteLine(item.Id);
-                        sw.WriteLine(item.ParentTaskId);
-                        sw.WriteLine(item.ParentUserId);
-                        sw.WriteLine(item.CommentBody);
-                    }
-                }
+                command.ExecuteNonQuery();
             }
             finally
             {
-                sw.Close();
-                ofs.Close();
-                sr.Close();
-                ifs.Close();
+                connection.Close();
             }
-
-            File.Delete(filePath);
-            File.Move(tempFilePath, filePath);
         }
 
         public Comment GetById(int id)
         {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
+            IDbConnection connection = new SqlConnection(connectionString);
             try
             {
-                while (!sr.EndOfStream)
+                connection.Open();
+                using (connection)
                 {
-                    Comment comment = new Comment();
-                    comment.Id = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    comment.CommentBody = sr.ReadLine();
+                    IDbCommand command = connection.CreateCommand();
+                    command.CommandText =
+@"
+SELECT * FROM Comments 
+WHERE 
+Id=@Id 
+";
 
-                    if (comment.Id == id)
+                    IDataParameter parameter = command.CreateParameter();
+                    parameter.ParameterName = "@Id";
+                    parameter.Value = id;
+                    command.Parameters.Add(parameter);
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    using (reader)
                     {
-                        return comment;
+                        while (reader.Read())
+                        {
+                            Comment comment = new Comment();
+                            comment.Id = (int)reader["Id"];
+                            comment.ParentTaskId = (int)reader["ParentTaskId"];
+                            comment.ParentUserId = (int)reader["ParentUserId"];
+                            comment.CommentBody = (string)reader["CommentBody"];
+
+
+                            return comment;
+                        }
                     }
                 }
             }
             finally
             {
-                sr.Close();
-                fs.Close();
+                connection.Close();
             }
 
             return null;
@@ -150,86 +151,86 @@ namespace Data_Access.Repositories
 
         public List<Comment> GetAll(int TaskId)
         {
-            List<Comment> result = new List<Comment>();
-
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
+            List<Comment> resultSet = new List<Comment>();
+            IDbConnection connection = new SqlConnection(connectionString);
 
             try
             {
-                while (!sr.EndOfStream)
+                connection.Open();
+                IDbCommand command = connection.CreateCommand();
+                command.CommandText =
+@"
+SELECT * FROM Comments 
+WHERE 
+    [ParentTaskId]=@ParentTaskId 
+";
+                IDataParameter parameter = command.CreateParameter();
+                parameter.ParameterName = "@ParentTaskId";
+                parameter.Value = TaskId;
+                command.Parameters.Add(parameter);
+
+                IDataReader reader = command.ExecuteReader();
+                using (reader)
                 {
-                    Comment comment = new Comment();
-                    comment.Id = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    comment.CommentBody = sr.ReadLine();
-
-                    if (comment.ParentTaskId == TaskId)
-                        result.Add(comment);
-
-
-                }
-            }
-            finally
-            {
-                sr.Close();
-                fs.Close();
-            }
-
-            return result;
-        }
-
-        public void Delete(Comment item)
-        {
-            string fileName = filePath.Substring(filePath.LastIndexOf(@"\") + 1);
-            string fileFolder = filePath.Substring(0, filePath.LastIndexOf(@"\"));
-
-            string tempFilePath = fileFolder + "temp." + fileName;
-
-            FileStream ifs = new FileStream(filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(ifs);
-
-            FileStream ofs = new FileStream(tempFilePath, FileMode.OpenOrCreate);
-            StreamWriter sw = new StreamWriter(ofs);
-
-            try
-            {
-                while (!sr.EndOfStream)
-                {
-                    Comment comment = new Comment();
-                    comment.Id = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    comment.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    comment.CommentBody = sr.ReadLine();
-
-                    if (comment.Id != item.Id)
+                    while (reader.Read())
                     {
-                        sw.WriteLine(comment.Id);
-                        sw.WriteLine(comment.ParentTaskId);
-                        sw.WriteLine(comment.ParentUserId);
-                        sw.WriteLine(comment.CommentBody);
+                        resultSet.Add(new Comment()
+                        {
+                            Id = (int)reader["Id"],
+                            ParentTaskId = (int)reader["ParentTaskId"],
+                            ParentUserId = (int)reader["ParentuserId"],
+                            CommentBody = (string)reader["CommentBody"]
+                    });
                     }
                 }
             }
             finally
             {
-                sw.Close();
-                ofs.Close();
-                sr.Close();
-                ifs.Close();
+                connection.Close();
             }
 
-            File.Delete(filePath);
-            File.Move(tempFilePath, filePath);
+            return resultSet;
+        }
+
+        public void Delete(Comment item)
+        {
+            IDbConnection connection = new SqlConnection(connectionString);
+
+
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+DELETE FROM Comments
+WHERE Id=@Id
+";
+
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Id";
+            parameter.Value = item.Id;
+            command.Parameters.Add(parameter);
+
+            try
+            {
+                connection.Open();
+
+                command.ExecuteNonQuery();
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
 
         public void Save(Comment item)
         {
             if (item.Id > 0)
+            {
                 Update(item);
+            }
             else
+            {
                 Insert(item);
+            }
         }
     }
 }

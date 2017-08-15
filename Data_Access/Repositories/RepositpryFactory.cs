@@ -11,26 +11,26 @@ namespace Data_Access.Repositories
     {
         public static UserRepository GetUserRepository()
         {
-            string path = ConfigurationManager.AppSettings["dataPath"];
-            return new UserRepository(path + @"\users.txt");
+            string connectionString = ConfigurationManager.ConnectionStrings["TaskManagerConnectionString"].ConnectionString;
+            return new UserRepository(connectionString);
         }
 
         public static TaskRepository GetTaskRepository()
         {
-            string path = ConfigurationManager.AppSettings["dataPath"];
-            return new TaskRepository(path + @"\tasks.txt");
+            string connectionString = ConfigurationManager.ConnectionStrings["TaskManagerConnectionString"].ConnectionString;
+            return new TaskRepository(connectionString);
         }
 
         public static CommentRepository GetCommentRepository()
         {
-            string path = ConfigurationManager.AppSettings["dataPath"];
-            return new CommentRepository(path + @"\comments.txt");
+            string connectionString = ConfigurationManager.ConnectionStrings["TaskManagerConnectionString"].ConnectionString;
+            return new CommentRepository(connectionString);
         }
 
         public static LogRepository GetLogRepository()
         {
-            string path = ConfigurationManager.AppSettings["dataPath"];
-            return new LogRepository(path + @"\logs.txt");
+            string connectionString = ConfigurationManager.ConnectionStrings["TaskManagerConnectionString"].ConnectionString;
+            return new LogRepository(connectionString);
         }
     }
 }

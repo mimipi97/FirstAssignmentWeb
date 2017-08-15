@@ -1,154 +1,161 @@
 ﻿using System;
 using System.Collections.Generic;
+using Data_Access.Entities;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Data_Access.Entities;
-using System.IO;
 
 namespace Data_Access.Repositories
 {
     public class LogRepository
     {
-        private readonly string filePath;
+        private readonly string connectionString;
 
-        public LogRepository(string filePath)
+        public LogRepository(string connectionString)
         {
-            this.filePath = filePath;
-        }
-
-        private int GetNextId()
-        {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
-            int id = 1;
-            try
-            {
-                while (!sr.EndOfStream)
-                {
-                    TimeLog log = new TimeLog();
-                    log.Id = Convert.ToInt32(sr.ReadLine());
-                    log.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    log.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    log.TimeSpent = Convert.ToInt32(sr.ReadLine());
-                    log.CreationDate = Convert.ToDateTime(sr.ReadLine());
-
-                    if (id <= log.Id)
-                        id = log.Id + 1;
-                }
-            }
-            finally
-            {
-                sr.Close();
-                fs.Close();
-            }
-
-            return id;
+            this.connectionString = connectionString;
         }
 
         private void Insert(TimeLog item)
         {
-            item.Id = GetNextId();
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            FileStream fs = new FileStream(filePath, FileMode.Append);
-            StreamWriter sw = new StreamWriter(fs);
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+INSERT INTO TimeLogs (ParentTaskId,ParentUserId,TimeSpent,CreationDate) 
+VALUES (@ParentTaskId,@ParentUserId,@TimeSpent,@CreationDate) 
+";
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@ParentTaskId";
+            parameter.Value = item.ParentTaskId;
+            command.Parameters.Add(parameter);
 
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@ParentUserId";
+            parameter.Value = item.ParentUserId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@TimeSpent";
+            parameter.Value = item.TimeSpent;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@CreationDate";
+            parameter.Value = item.CreationDate;
+            command.Parameters.Add(parameter);
+
+            
             try
             {
-                sw.WriteLine(item.Id);
-                sw.WriteLine(item.ParentTaskId);
-                sw.WriteLine(item.ParentUserId);
-                sw.WriteLine(item.TimeSpent);
-                sw.WriteLine(item.CreationDate);
+                connection.Open();
 
+                command.ExecuteNonQuery();
             }
-
             finally
             {
-                sw.Close();
-                fs.Close();
+                connection.Close();
             }
         }
 
         private void Update(TimeLog item)
         {
-            string fileName = filePath.Substring(filePath.LastIndexOf(@"\") + 1);
-            string fileFolder = filePath.Substring(0, filePath.LastIndexOf(@"\"));
+            IDbConnection connection = new SqlConnection(connectionString);
 
-            string tempFilePath = fileFolder + "temp." + fileName;
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+UPDATE TimeLogs 
+SET 
+    ParentTaskId=@ParentTaskId, 
+    ParentUserId=@ParentUserId, 
+    TimeSpent=@TimeSpent,
+    CreationDate=@CreationDate
+WHERE Id=@Id
+";
 
-            FileStream ifs = new FileStream(filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(ifs);
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Id";
+            parameter.Value = item.Id;
+            command.Parameters.Add(parameter);
 
-            FileStream ofs = new FileStream(tempFilePath, FileMode.OpenOrCreate);
-            StreamWriter sw = new StreamWriter(ofs);
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@ParentTaskId";
+            parameter.Value = item.ParentTaskId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@ParentUserId";
+            parameter.Value = item.ParentUserId;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@TimeSpent";
+            parameter.Value = item.TimeSpent;
+            command.Parameters.Add(parameter);
+
+            parameter = command.CreateParameter();
+            parameter.ParameterName = "@CreationDate";
+            parameter.Value = item.CreationDate;
+            command.Parameters.Add(parameter);
 
             try
             {
-                while (!sr.EndOfStream)
-                {
-                    TimeLog log = new TimeLog();
-                    log.Id = Convert.ToInt32(sr.ReadLine());
-                    log.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    log.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    log.TimeSpent = Convert.ToInt32(sr.ReadLine());
-                    log.CreationDate = Convert.ToDateTime(sr.ReadLine());
+                connection.Open();
 
-                    if (log.Id != item.Id)
-                    {
-                        sw.WriteLine(log.Id);
-                        sw.WriteLine(log.ParentTaskId);
-                        sw.WriteLine(log.ParentUserId);
-                        sw.WriteLine(log.TimeSpent);
-                        sw.WriteLine(log.CreationDate);
-                    }
-                    else
-                    {
-                        sw.WriteLine(item.Id);
-                        sw.WriteLine(item.ParentTaskId);
-                        sw.WriteLine(item.ParentUserId);
-                        sw.WriteLine(item.TimeSpent);
-                        sw.WriteLine(item.CreationDate);
-                    }
-                }
+                command.ExecuteNonQuery();
             }
             finally
             {
-                sw.Close();
-                ofs.Close();
-                sr.Close();
-                ifs.Close();
+                connection.Close();
             }
-
-            File.Delete(filePath);
-            File.Move(tempFilePath, filePath);
         }
 
         public TimeLog GetById(int id)
         {
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
-
+            IDbConnection connection = new SqlConnection(connectionString);
             try
             {
-                while (!sr.EndOfStream)
+                connection.Open();
+                using (connection)
                 {
-                    TimeLog log = new TimeLog();
-                    log.Id = Convert.ToInt32(sr.ReadLine());
-                    log.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    log.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    log.TimeSpent = Convert.ToInt32(sr.ReadLine());
-                    log.CreationDate = Convert.ToDateTime(sr.ReadLine());
+                    IDbCommand command = connection.CreateCommand();
+                    command.CommandText =
+@"
+SELECT * FROM TimeLogs 
+WHERE 
+Id=@Id 
+";
 
-                    if (log.Id == id)
-                        return log;
+                    IDataParameter parameter = command.CreateParameter();
+                    parameter.ParameterName = "@Id";
+                    parameter.Value = id;
+                    command.Parameters.Add(parameter);
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    using (reader)
+                    {
+                        while (reader.Read())
+                        {
+                            TimeLog log = new TimeLog();
+                            log.Id = (int)reader["Id"];
+                            log.ParentTaskId = (int)reader["ParentTaskId"];
+                            log.ParentUserId = (int)reader["ParentUserId"];
+                            log.TimeSpent = (int)reader["TimeSpent"];
+                            log.CreationDate = (DateTime)reader["CreationDate"];
+                            
+
+                            return log;
+                        }
+                    }
                 }
             }
             finally
             {
-                sr.Close();
-                fs.Close();
+                connection.Close();
             }
 
             return null;
@@ -156,87 +163,88 @@ namespace Data_Access.Repositories
 
         public List<TimeLog> GetAll(int TaskId)
         {
-            List<TimeLog> result = new List<TimeLog>();
-
-            FileStream fs = new FileStream(this.filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(fs);
+            List<TimeLog> resultSet = new List<TimeLog>();
+            IDbConnection connection = new SqlConnection(connectionString);
 
             try
             {
-                while (!sr.EndOfStream)
+                connection.Open();
+                IDbCommand command = connection.CreateCommand();
+                command.CommandText =
+@"
+SELECT * FROM TimeLogs 
+WHERE 
+    [ParentTaskId]=@ParentTaskId 
+";
+                IDataParameter parameter = command.CreateParameter();
+                parameter.ParameterName = "@ParentTaskId";
+                parameter.Value = TaskId;
+                command.Parameters.Add(parameter);
+
+                IDataReader reader = command.ExecuteReader();
+                using (reader)
                 {
-                    TimeLog log = new TimeLog();
-                    log.Id = Convert.ToInt32(sr.ReadLine());
-                    log.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    log.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    log.TimeSpent = Convert.ToInt32(sr.ReadLine());
-                    log.CreationDate = Convert.ToDateTime(sr.ReadLine());
-
-                    if (log.ParentTaskId == TaskId)
-                        result.Add(log);
-                }
-            }
-            finally
-            {
-                sr.Close();
-                fs.Close();
-            }
-
-            return result;
-        }
-
-        public void Delete(TimeLog item)
-        {
-            string fileName = filePath.Substring(filePath.LastIndexOf(@"\") + 1);
-            string fileFolder = filePath.Substring(0, filePath.LastIndexOf(@"\"));
-
-            string tempFilePath = fileFolder + "temp." + fileName;
-
-            FileStream ifs = new FileStream(filePath, FileMode.OpenOrCreate);
-            StreamReader sr = new StreamReader(ifs);
-
-            FileStream ofs = new FileStream(tempFilePath, FileMode.OpenOrCreate);
-            StreamWriter sw = new StreamWriter(ofs);
-
-            try
-            {
-                while (!sr.EndOfStream)
-                {
-                    TimeLog log = new TimeLog();
-                    log.Id = Convert.ToInt32(sr.ReadLine());
-                    log.ParentTaskId = Convert.ToInt32(sr.ReadLine());
-                    log.ParentUserId = Convert.ToInt32(sr.ReadLine());
-                    log.TimeSpent = Convert.ToInt32(sr.ReadLine());
-                    log.CreationDate = Convert.ToDateTime(sr.ReadLine());
-
-                    if (log.Id != log.Id)
+                    while (reader.Read())
                     {
-                        sw.WriteLine(log.Id);
-                        sw.WriteLine(log.ParentTaskId);
-                        sw.WriteLine(log.ParentUserId);
-                        sw.WriteLine(log.TimeSpent);
-                        sw.WriteLine(log.CreationDate);
+                        resultSet.Add(new TimeLog()
+                        {
+                            Id = (int)reader["Id"],
+                            ParentTaskId = (int)reader["ParentTaskId"],
+                            ParentUserId = (int)reader["ParentuserId"],
+                            TimeSpent = (int)reader["TimeSpent"],
+                            CreationDate = (DateTime)reader["CreationDate"]
+                        });
                     }
                 }
             }
             finally
             {
-                sw.Close();
-                ofs.Close();
-                sr.Close();
-                ifs.Close();
+                connection.Close();
             }
 
-            File.Delete(filePath);
-            File.Move(tempFilePath, filePath);
+            return resultSet;
+        }
+
+        public void Delete(TimeLog item)
+        {
+            IDbConnection connection = new SqlConnection(connectionString);
+
+
+            IDbCommand command = connection.CreateCommand();
+            command.CommandText =
+@"
+DELETE FROM TimeLogs 
+WHERE Id=@Id
+";
+
+            IDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@Id";
+            parameter.Value = item.Id;
+            command.Parameters.Add(parameter);
+
+            try
+            {
+                connection.Open();
+
+                command.ExecuteNonQuery();
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
 
         public void Save(TimeLog item)
         {
             if (item.Id > 0)
+            {
                 Update(item);
+            }
             else
+            {
                 Insert(item);
+            }
         }
     }
 }
+
